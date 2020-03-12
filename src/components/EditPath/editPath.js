@@ -1,8 +1,10 @@
 import React, { Component } from "react"
 import gql from "graphql-tag"
-import { Row, Col, Icon, Popconfirm } from "antd"
-import uuid from "uuid"
 import { navigate } from "gatsby"
+
+import { CloseCircleOutlined } from "@ant-design/icons"
+import { Row, Col, Popconfirm, Switch } from "antd"
+import { v4 as uuidv4 } from "uuid"
 import { WithContext as ReactTags } from "react-tag-input"
 import FileUploader from "react-firebase-file-uploader"
 import firebase from "firebase/app"
@@ -29,18 +31,18 @@ export class EditPath extends Component {
     isUploading: false,
     progress: 0,
     path_id: 0,
+    isPrivate: false,
   }
 
   componentDidMount() {
     if (typeof window !== "undefined") {
       this.setState({
         user_id: localStorage.getItem("userId"),
-        id: uuid.v4(),
+        id: uuidv4(),
       })
     }
 
     const data = this.props.data
-
     let new_tags_array = []
 
     data.tags.split(",").map(tag => {
@@ -61,6 +63,7 @@ export class EditPath extends Component {
       tags: data.tags,
       tags_array: new_tags_array,
       path_id: data.id,
+      isPrivate: data.isPrivate,
     })
   }
 
@@ -73,7 +76,7 @@ export class EditPath extends Component {
 
   addNewFootstep = () => {
     this.setState(state => {
-      let new_footstep = { id: uuid.v4() }
+      let new_footstep = { id: uuidv4() }
 
       return { footsteps: [...state.footsteps, new_footstep] }
     })
@@ -101,6 +104,11 @@ export class EditPath extends Component {
     this.setState({
       footsteps: removed_footstep,
     })
+  }
+
+  // Handle Private Paths of User
+  handlePrivatePath = val => {
+    this.setState({ isPrivate: val })
   }
 
   // Footstep validation functions
@@ -237,6 +245,7 @@ export class EditPath extends Component {
             title: this.state.title,
             description: this.state.description,
             tags: this.state.tags,
+            isPrivate: this.state.isPrivate,
           },
         })
         .then(res => {
@@ -327,10 +336,19 @@ export class EditPath extends Component {
           onConfirm={this.deletePath}
         >
           <div className={addStyles.deletePath}>
-            <Icon type="close-circle" /> Delete Path
+            <CloseCircleOutlined /> Delete Path
           </div>
         </Popconfirm>
-
+        <div className={addStyles.checkbox_input}>
+          <label>
+            Private{"  "}
+            <Switch
+              style={this.state.isPrivate ? { backgroundColor: "green" } : {}}
+              checked={this.state.isPrivate}
+              onChange={this.handlePrivatePath}
+            />
+          </label>
+        </div>
         <Row>
           <Col xs={24} lg={12}>
             <div className={addStyles.input_label}>Title</div>
@@ -466,6 +484,7 @@ export const UPDATE_PATH_MUTATION_APOLLO = gql`
     $icon: String!
     $tags: String!
     $title: String!
+    $isPrivate: Boolean!
   ) {
     update_Learning_Paths(
       where: { id: { _eq: $id } }
@@ -474,6 +493,7 @@ export const UPDATE_PATH_MUTATION_APOLLO = gql`
         icon: $icon
         tags: $tags
         title: $title
+        isPrivate: $isPrivate
       }
     ) {
       affected_rows

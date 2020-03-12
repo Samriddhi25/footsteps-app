@@ -1,8 +1,9 @@
 import React, { Component } from "react"
-import gql from "graphql-tag"
-import { Row, Col } from "antd"
-import uuid from "uuid"
 import { navigate } from "gatsby"
+import gql from "graphql-tag"
+
+import { v4 as uuidv4 } from "uuid"
+import { Row, Col, Switch } from "antd"
 import { WithContext as ReactTags } from "react-tag-input"
 import FileUploader from "react-firebase-file-uploader"
 import firebase from "firebase/app"
@@ -28,13 +29,14 @@ export class addPath extends Component {
     tags_array: [],
     isUploading: false,
     progress: 0,
+    isPrivate: false,
   }
 
   componentDidMount() {
     if (typeof window !== "undefined") {
       this.setState({
         user_id: localStorage.getItem("userId"),
-        id: uuid.v4(),
+        id: uuidv4(),
       })
     }
   }
@@ -48,7 +50,7 @@ export class addPath extends Component {
 
   addNewFootstep = () => {
     this.setState(state => {
-      let new_footstep = { id: uuid.v4() }
+      let new_footstep = { id: uuidv4() }
 
       return { footsteps: [...state.footsteps, new_footstep] }
     })
@@ -148,8 +150,12 @@ export class addPath extends Component {
     }
   }
 
-  // Tag Handling Functions
+  // Handle Private Paths of User
+  handlePrivatePath = val => {
+    this.setState({ isPrivate: val })
+  }
 
+  // Tag Handling Functions
   handleTagDelete = i => {
     const { tags_array } = this.state
     this.setState({
@@ -193,6 +199,7 @@ export class addPath extends Component {
             title: this.state.title,
             description: this.state.description,
             tags: this.state.tags,
+            isPrivate: this.state.isPrivate,
           },
         })
         .then(res => {
@@ -242,6 +249,16 @@ export class addPath extends Component {
     return (
       <div className={styles.container}>
         <h1 className={styles.heading}>Create a new Path</h1>
+        <div className={styles.checkbox_input}>
+          <label>
+            Private{"  "}
+            <Switch
+              style={this.state.isPrivate ? { backgroundColor: "green" } : {}}
+              checked={this.state.isPrivate}
+              onChange={this.handlePrivatePath}
+            />
+          </label>
+        </div>
         <Row>
           <Col xs={24} lg={12}>
             <div className={styles.input_label}>Title</div>
@@ -377,6 +394,7 @@ export const CREATE_PATH_MUTATION_APOLLO = gql`
     $title: String!
     $description: String!
     $tags: String!
+    $isPrivate: Boolean!
   ) {
     insert_Learning_Paths(
       objects: {
@@ -385,6 +403,7 @@ export const CREATE_PATH_MUTATION_APOLLO = gql`
         icon: $icon
         title: $title
         tags: $tags
+        isPrivate: $isPrivate
       }
     ) {
       affected_rows
